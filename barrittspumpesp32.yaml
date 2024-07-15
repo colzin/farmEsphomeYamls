@@ -43,7 +43,7 @@ binary_sensor:
   # Sense the optocoupler pulling low when on
   - platform: gpio
     pin:
-      number: 5 # GPIO5 is UEXT1 pin 10.
+      number: 5 # GPIO5 is UEXT1 pin 10. No UART output if driven low when booting MCU
       inverted: true
       mode:
         input: true
@@ -60,7 +60,7 @@ sensor:
   - platform: adc
 
     pin: 39 # GPI39 on esp32-PoE
-    attenuation: 11dB # Need max attenuation.
+    attenuation: 12dB # Need max attenuation.
     name: "5V rail"
     filters:
       # resistors are 100k below, 47k above. So the value should be multiplied by 1.47 to get the value.

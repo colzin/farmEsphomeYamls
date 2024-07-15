@@ -39,28 +39,68 @@ ethernet:
   phy_addr: 0
   power_pin: GPIO12
 
-binary_sensor:
-  # Sense the optocoupler pulling low when on
+# PINS TO USE
+# GPIO0, GPIO5, GPI36, GPI34, GPIO16/33, GPIO15, GPIO13 have HW pullups.
+# These are good for open-drain outputs or inputs that are active low.
+# GPIO33 is probably shorted to GPIO16, so DO NOT USE BOTH GPIO16 AND GPIO33
+
+# ADC pins
+# GPI39 measures the 5V rail, use 12dB atten and 1.67 multiplier.
+# GPI32 and GPIO35 are good ADC pins, with no HW or MCU pull resistances
+
+#     - - - - - - - - - - - - - - - - - - - - - GPIO OUTPUTS, ACTIVE LOW, OPEN-DRAIN OUTPUTS  - - - - -
+switch:
+  # GPIO0 input/output
   - platform: gpio
+    name: "Phase Converter software ON switch"
+    id: "phaseconSwOnSwitch"
     pin:
-      number: 5 # GPIO5 is UEXT1 pin 10.
+      number: 0
+      inverted: true # active low to drive the relay, turning PC on
+
+# -------------    GPIO INPUTS, ACTIVE LOW WITH PULLUPS
+binary_sensor:
+  # GPI36 optocoupler to Phase Converter RUN contactor control, if it is actually running
+  - platform: gpio
+    name: "Phase Converter Running"
+    pin:
+      number: 36
       inverted: true
       mode:
         input: true
         # We don't need a pullup, HW has a 10k pullup
-
-    name: "Barritt South Pump Running"
     device_class: power
     filters:
       - delayed_on: 300ms
       - delayed_off: 1000ms
 
+  # GPI34 input/output: Whether the ON switch is switched ON or OFF
+  - platform: gpio
+    name: "Phase Converter Hardware ON switch"
+    pin:
+      number: 34
+      inverted: true
+      mode:
+        input: true
+        # We don't need a pullup, HW has a 10k pullup
+    device_class: power
+    filters:
+      - delayed_on: 300ms
+      - delayed_off: 1000ms
+    # Make it obey the hardware switch when the hardware switch changes state
+    on_press:
+      then:
+        - switch.turn_on: phaseconSwOnSwitch
+    on_release:
+      then:
+        - switch.turn_off: phaseconSwOnSwitch
+
+#   ------  ADC INPUTS    ---------------------------------------------
 sensor:
   # Sense the 5V on the circuit: GND-100k-pin-47k-5V divider.
   - platform: adc
-
     pin: 39 # GPI39 on esp32-PoE
-    attenuation: 11dB # Need max attenuation.
+    attenuation: 12dB # Need max attenuation.
     name: "5V rail"
     filters:
       # resistors are 100k below, 47k above. So the value should be multiplied by 1.47 to get the value.
@@ -69,17 +109,44 @@ sensor:
     update_interval: 120s
     accuracy_decimals: 3
 
-  # Sense the 4-20mA on pin GPI35
-  - platform: adc
-    pin: 35 # GPI35 on esp32-PoE
-    # With a 100 Ohm resistor, v=IR says that 4mA will be 400mV, 20mA would be 2000mV. But this sensor is to 5 meters, and we only need 2 feet.
-    # At 1 meter, we would have 7.2mA current, so 720mV. 0dB attenuation goes up to VREF, which is about 1000-1200mV, so that should be good.
-    attenuation: 0dB 
-    name: "Barritt South Sump Level ADC"
-    filters:
-      - sliding_window_moving_average:
-          window_size: 6
-          send_every: 6
-          send_first_at: 6
-    update_interval: 5s # will report every update_interval * send_every seconds.
-    accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+  # # ADC input on GPI35
+  # - platform: adc
+  #   pin: 35
+  #   # ADC notes here
+  #   attenuation: 0dB
+  #   name: "GPI35 ADC"
+  #   filters:
+  #     - sliding_window_moving_average:
+  #         window_size: 6
+  #         send_every: 6
+  #         send_first_at: 6
+  #   update_interval: 5s # will report every update_interval * send_every seconds.
+  #   accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+
+  # # ADC input on GPI32
+  # - platform: adc
+  #   pin: 32
+  #   # ADC notes here
+  #   attenuation: 0dB
+  #   name: "GPI32 ADC"
+  #   filters:
+  #     - sliding_window_moving_average:
+  #         window_size: 6
+  #         send_every: 6
+  #         send_first_at: 6
+  #   update_interval: 5s # will report every update_interval * send_every seconds.
+  #   accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+
+  # # ADC input on GPIO14
+  # - platform: adc
+  #   pin: 14
+  #   # ADC notes here
+  #   attenuation: 0dB
+  #   name: "GPIO14 ADC"
+  #   filters:
+  #     - sliding_window_moving_average:
+  #         window_size: 6
+  #         send_every: 6
+  #         send_first_at: 6
+  #   update_interval: 5s # will report every update_interval * send_every seconds.
+  #   accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.

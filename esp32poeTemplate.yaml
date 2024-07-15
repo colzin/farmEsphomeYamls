@@ -1,0 +1,243 @@
+esphome:
+  name: esp32-poe-template
+
+esp32:
+  board: esp32-poe
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  platform: esphome
+  password: ""
+
+# wifi: # Can't use wifi and ethernet at the same time
+#  ssid: !secret farm_wifi_ssid
+#  password: !secret farm_wifi_pw
+
+#  # Enable fallback hotspot (captive portal) in case wifi connection fails
+#  ap:
+#    ssid: "esp32-poe-template"
+#    password: !secret fallback_ap_pw
+
+# captive_portal:
+
+# Custom stuff below:
+
+# Ethernet port for ESP32-PoE board
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO17_OUT
+  phy_addr: 0
+  power_pin: GPIO12
+
+# PINS TO USE
+# GPIO0, GPIO5, GPI36, GPI34, GPIO16/33, GPIO15, GPIO13 have HW pullups.
+# These are good for open-drain outputs or inputs that are active low.
+# GPIO33 is probably shorted to GPIO16, so DO NOT USE BOTH GPIO16 AND GPIO33
+
+# ADC pins
+# GPI39 measures the 5V rail, use 12dB atten and 1.67 multiplier.
+# GPI32 and GPIO35 are good ADC pins, with no HW or MCU pull resistances
+
+# -------------    GPIO INPUTS, ACTIVE LOW WITH PULLUPS
+binary_sensor:
+  # GPIO0 input/output
+  - platform: gpio
+    name: "GPIO0 active low"
+    pin:
+      number: 0
+      inverted: true
+      mode:
+        input: true
+        # We don't need a pullup, HW has a 10k pullup
+    device_class: power
+    filters:
+      - delayed_on: 300ms
+      - delayed_off: 1000ms
+
+  # GPIO5 input/output
+  - platform: gpio
+    name: "GPIO5 active low"
+    pin:
+      number: 5
+      inverted: true
+      mode:
+        input: true
+        # We don't need a pullup, HW has a 10k pullup
+    device_class: power
+    filters:
+      - delayed_on: 300ms
+      - delayed_off: 1000ms
+
+  # GPI36 input/output
+  - platform: gpio
+    name: "GPI36 active low"
+    pin:
+      number: 36
+      inverted: true
+      mode:
+        input: true
+        # We don't need a pullup, HW has a 10k pullup
+    device_class: power
+    filters:
+      - delayed_on: 300ms
+      - delayed_off: 1000ms
+
+  # GPI34 input/output
+  - platform: gpio
+    name: "GPI34 active low"
+    pin:
+      number: 34
+      inverted: true
+      mode:
+        input: true
+        # We don't need a pullup, HW has a 10k pullup
+    device_class: power
+    filters:
+      - delayed_on: 300ms
+      - delayed_off: 1000ms
+
+  # GPIO33 shorts to GPIO16
+  # GPIO16 input/output
+  - platform: gpio
+    name: "GPIO16 active low"
+    pin:
+      number: 16
+      inverted: true
+      mode:
+        input: true
+        # We don't need a pullup, HW has a 10k pullup
+    device_class: power
+    filters:
+      - delayed_on: 300ms
+      - delayed_off: 1000ms
+
+  # GPIO15 input/output
+  - platform: gpio
+    name: "GPIO15 active low"
+    pin:
+      number: 15
+      inverted: true
+      mode:
+        input: true
+        # We don't need a pullup, HW has a 10k pullup
+    device_class: power
+    filters:
+      - delayed_on: 300ms
+      - delayed_off: 1000ms
+
+  # GPIO13 input/output
+  - platform: gpio
+    name: "GPIO13 active low"
+    pin:
+      number: 13
+      inverted: true
+      mode:
+        input: true
+        # We don't need a pullup, HW has a 10k pullup
+    device_class: power
+    filters:
+      - delayed_on: 300ms
+      - delayed_off: 1000ms
+
+  #     - - - - - - - - - - - - - - - - - - - - - GPIO OUTPUTS, ACTIVE LOW, OPEN-DRAIN OUTPUTS  - - - - -
+switch:
+  # GPIO0 input/output
+  - platform: gpio
+    name: "GPIO0 active low"
+    pin:
+      number: 0
+      inverted: true # active low to drive the relay
+
+  # GPIO5 input/output
+  - platform: gpio
+    name: "GPIO5 active low"
+    pin:
+      number: 5
+      inverted: true # active low to drive the relay
+
+  # GPIO33 shorts to GPIO16
+  # GPIO16 input/output, don't use either as output to be safe
+
+  # GPIO15 input/output
+  - platform: gpio
+    name: "GPIO15 active low"
+    pin:
+      number: 15
+      inverted: true # active low to drive the relay
+
+  # GPIO13 input/output
+  - platform: gpio
+    name: "GPIO13 active low"
+    pin:
+      number: 13
+      inverted: true # active low to drive the relay
+
+
+
+
+#   ------  ADC INPUTS    ---------------------------------------------
+sensor:
+  # Sense the 5V on the circuit: GND-100k-pin-47k-5V divider.
+  - platform: adc
+    pin: 39 # GPI39 on esp32-PoE
+    attenuation: 12dB # Need max attenuation.
+    name: "5V rail"
+    filters:
+      # resistors are 100k below, 47k above. So the value should be multiplied by 1.47 to get the value.
+      # However, multiply: 1.47 had it reporting 4.58V when it was actually 5.19V. 1.47*(5.19/4.58) = 1.665786
+      - multiply: 1.67
+    update_interval: 120s
+    accuracy_decimals: 3
+
+  # ADC input on GPI35
+  - platform: adc
+    pin: 35
+    # ADC notes here
+    attenuation: 0dB
+    name: "GPI35 ADC"
+    filters:
+      - sliding_window_moving_average:
+          window_size: 6
+          send_every: 6
+          send_first_at: 6
+    update_interval: 5s # will report every update_interval * send_every seconds.
+    accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+
+  # ADC input on GPI32
+  - platform: adc
+    pin: 32
+    # ADC notes here
+    attenuation: 0dB
+    name: "GPI32 ADC"
+    filters:
+      - sliding_window_moving_average:
+          window_size: 6
+          send_every: 6
+          send_first_at: 6
+    update_interval: 5s # will report every update_interval * send_every seconds.
+    accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+
+  # ADC input on GPIO14
+  - platform: adc
+    pin: 14
+    # ADC notes here
+    attenuation: 0dB
+    name: "GPIO14 ADC"
+    filters:
+      - sliding_window_moving_average:
+          window_size: 6
+          send_every: 6
+          send_first_at: 6
+    update_interval: 5s # will report every update_interval * send_every seconds.
+    accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+
