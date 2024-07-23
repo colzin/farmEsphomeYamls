@@ -38,6 +38,11 @@ ethernet:
   clk_mode: GPIO17_OUT
   phy_addr: 0
   power_pin: GPIO12
+    # Optional manual IP
+  manual_ip:
+    static_ip: 192.168.1.5
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
 
 binary_sensor:
   # Sense the optocoupler pulling low when on
