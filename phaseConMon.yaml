@@ -1,0 +1,93 @@
+esphome:
+  name: phaseconmon
+
+esp32:
+  board: wt32-eth01
+  framework:
+    type: arduino
+
+#  Can't do wiFi and Ethernet
+# wifi:
+#   networks:
+#   - ssid: !secret farm_wifi_ssid
+#       password: !secret farm_wifi_pw
+#     - ssid: !secret _218_wifi_ssid
+#       password: !secret _218_wifi_pw
+#   # Enable fallback hotspot (captive portal) in case wifi connection fails
+#   ap:
+#     ssid: "PhaseconmonFallback"
+#     password: !secret fallback_ap_pw
+# # Captive portal to be able to set the WiFi PW back (requires wifi and AP)
+# captive_portal:
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  - platform: esphome
+    password: ""
+
+# Device Specific Config
+#WT32-ETH01 ethernet: https://esphome.io/components/ethernet.html
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO0_IN
+  phy_addr: 1
+  power_pin: GPIO16
+
+binary_sensor:
+
+  - platform: status
+    # Status for helping see if it is online
+    name: "Barritt NE Phase Converter Status"
+
+  # Sense the optocoupler pulling low when on
+  - platform: gpio
+    pin:
+      number: GPIO39 # GPIO39
+      inverted: true
+      mode:
+        input: true
+        # We don't need a pullup, HW has a 4.7k pullup and GPIO34-39 don't have pullups
+    name: "Barritt NE Phase Converter Running"
+    device_class: power
+    filters:
+      - delayed_on: 300ms
+      - delayed_off: 1000ms
+
+# Two relay channels, momentary buttons https://esphome.io/components/button/
+switch:
+  - platform: gpio
+    # Press and release to turn Phase Converter on
+    name: "Start Barritt NE Phase Converter"
+    id: startPhaseCon
+    pin: 
+      number: GPIO33 # labeled 485_EN on WT32-ETH01
+      inverted: true
+      mode: 
+        output: true
+        open_drain: true
+    icon: "mdi:electric-switch-closed"
+    on_turn_on:
+      - delay: 250ms
+      - switch.turn_off: startPhaseCon
+
+  - platform: gpio
+    # Press and release to turn phase converter off
+    name: "Stop Barritt NE Phase Converter"
+    id: stopPhaseCon
+    pin: 
+      number: GPIO32 # labeled CFG on WT32-ETH01
+      inverted: true
+      mode: 
+        output: true
+        open_drain: true
+    icon: "mdi:electric-switch-open"
+    on_turn_on:
+      - delay: 250ms
+      - switch.turn_off: stopPhaseCon

@@ -40,6 +40,11 @@ ethernet:
   power_pin: GPIO12
 
 binary_sensor:
+
+  - platform: status
+    # Status for helping see if it is online
+    name: "Barritt S Pump ESP32 Status"
+
   # Sense the optocoupler pulling low when on
   - platform: gpio
     pin:
@@ -58,7 +63,6 @@ binary_sensor:
 sensor:
   # Sense the 5V on the circuit: GND-100k-pin-47k-5V divider.
   - platform: adc
-
     pin: 39 # GPI39 on esp32-PoE
     attenuation: 12dB # Need max attenuation.
     name: "5V rail"
