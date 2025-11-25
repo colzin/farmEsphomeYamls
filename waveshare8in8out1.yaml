@@ -356,4 +356,49 @@ button:
     internal: false
     entity_category: config
 
+
+
+
+# # ADC input on GPIO1
+  # - platform: adc
+  #   pin: GPIO1
+  #   # ADC notes here
+  #   attenuation: 0dB
+  #   name: "GPIO1 ADC"
+  #   filters:
+  #     - sliding_window_moving_average:
+  #         window_size: 6
+  #         send_every: 6
+  #         send_first_at: 6
+  #   update_interval: 5s # will report every update_interval * send_every seconds.
+  #   accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+
+  # # ADC input on GPIO2
+  # - platform: adc
+  #   pin: GPIO2
+  #   # ADC notes here
+  #   attenuation: 0dB
+  #   name: "GPIO2 ADC"
+  #   filters:
+  #     - sliding_window_moving_average:
+  #         window_size: 6
+  #         send_every: 6
+  #         send_first_at: 6
+  #   update_interval: 5s # will report every update_interval * send_every seconds.
+  #   accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+
+  # # ADC input on GPIO3
+  # - platform: adc
+  #   pin: GPIO3
+  #   # ADC notes here
+  #   attenuation: 0dB
+  #   name: "GPIO3 ADC"
+  #   filters:
+  #     - sliding_window_moving_average:
+  #         window_size: 6
+  #         send_every: 6
+  #         send_first_at: 6
+  #   update_interval: 5s # will report every update_interval * send_every seconds.
+  #   accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+  
 # TODO any automations and custom names below:

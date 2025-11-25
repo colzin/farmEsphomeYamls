@@ -91,6 +91,10 @@ ethernet:
   cs_pin: GPIO16
   interrupt_pin: GPIO12
   reset_pin: GPIO39
+
+
+
+# Text sensors below
 text_sensor:
   - platform: ethernet_info
     ip_address:
@@ -109,6 +113,13 @@ text_sensor:
       name: "DNS Address-${device_name}"
     mac_address:
       name: "MAC Address-${device_name}"
+      # now a text sensor for reset reason
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+
 
 # Enable web server
 web_server:
@@ -152,12 +163,45 @@ uart:
 #    id: pcf85063_time
 ## end of time config
 
-binary_sensor:
-  - platform: status
-    name: "Online?"
 
+# Debug sensor like in https://esphome.io/components/debug.html
+debug:
+  update_interval: 30s
+
+# Any Sensor components
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+    # fragmentation: Only on ESP8266
+    #   name: "Heap Fragmentation"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"
+    # psram:
+    #   name: "Free PSRAM"
+    cpu_frequency:
+      name: "CPU Frequency"
+
+  # - platform: adc
+  #   pin: GPIO36 # Solder GPIO36 to 3V3 pin to measure VCC
+  #   name: "VCC Voltage"
+  #   attenuation: 12db
+
+  - platform: internal_temperature
+    name: "MCU Temperature"
+
+# All binary sensors below
+binary_sensor:
+
+#status is good for telling if it's online
+  - platform: status
+    name: "${device_name} Online?"
+
+# GPIO for reading a pin
   - platform: gpio
-    name: "Boot button"
+    name: "Boot button reboot"
     pin:
       number: 0
       ignore_strapping_warning: true # Don't warn when compiling, we're just reading it here
@@ -169,79 +213,79 @@ binary_sensor:
       then:
       - button.press: restart_button
 
-# Digital Inputs
+# Digital Inputs are binary sensors through GPIO
   - platform: gpio
-    id: di1
-    name: "DI1"
+    id: pumpRunning
+    name: "Pump Running (DI1)"
     pin:
       number: GPIO4
       mode: INPUT_PULLUP
       inverted: true
     filters:
-      - delayed_on_off: 100ms # Debounce input
+      - delayed_on_off: 900ms # Debounce input
   - platform: gpio
-    id: di2
-    name: "DI2"
+    id: pressureUp
+    name: "Pressure Up (DI2)"
     pin:
       number: GPIO5
       mode: INPUT_PULLUP
-      inverted: true
+      inverted: false # Pressure is up when voltage is not present here, switch is closed
     filters:
-      - delayed_on_off: 100ms # Debounce input
+      - delayed_on_off: 900ms # Debounce input
   - platform: gpio
-    id: di3
-    name: "DI3"
+    id: inAuto
+    name: "Hand/Auto In Auto (DI3)"
     pin:
       number: GPIO6
       mode: INPUT_PULLUP
-      inverted: true
+      inverted: true # TODO find polarity
     filters:
-      - delayed_on_off: 100ms # Debounce input
+      - delayed_on_off: 500ms # Debounce input
   - platform: gpio
-    id: di4
-    name: "DI4"
+    id: faultLight
+    name: "Fault or Error"
     pin:
       number: GPIO7
       mode: INPUT_PULLUP
       inverted: true
     filters:
-      - delayed_on_off: 100ms # Debounce input
-  - platform: gpio
-    id: di5
-    name: "DI5"
-    pin:
-      number: GPIO8
-      mode: INPUT_PULLUP
-      inverted: true
-    filters:
-      - delayed_on_off: 100ms # Debounce input
-  - platform: gpio
-    id: di6
-    name: "DI6"
-    pin:
-      number: GPIO9
-      mode: INPUT_PULLUP
-      inverted: true
-    filters:
-      - delayed_on_off: 100ms # Debounce input
-  - platform: gpio
-    id: di7
-    name: "DI7"
-    pin:
-      number: GPIO10
-      mode: INPUT_PULLUP
-      inverted: true
-    filters:
-      - delayed_on_off: 100ms # Debounce input
-  - platform: gpio
-    id: di8
-    name: "DI8"
-    pin:
-      number: GPIO11
-      mode: INPUT_PULLUP
-      inverted: true
-    filters:
-      - delayed_on_off: 100ms # Debounce input
+      - delayed_on_off: 500ms # Debounce input
+  #- platform: gpio
+  #  id: di5
+  #  name: "DI5"
+  #  pin:
+  #    number: GPIO8
+  #    mode: INPUT_PULLUP
+  #    inverted: true
+  #  filters:
+  #    - delayed_on_off: 100ms # Debounce input
+  #- platform: gpio
+  #  id: di6
+  #  name: "DI6"
+  #  pin:
+  #    number: GPIO9
+  #    mode: INPUT_PULLUP
+  #    inverted: true
+  #  filters:
+  #    - delayed_on_off: 100ms # Debounce input
+  #- platform: gpio
+  #  id: di7
+  #  name: "DI7"
+  #  pin:
+  #    number: GPIO10
+  #    mode: INPUT_PULLUP
+  #    inverted: true
+  #  filters:
+  #    - delayed_on_off: 100ms # Debounce input
+  #- platform: gpio
+  #  id: di8
+  #  name: "DI8"
+  #  pin:
+  #    number: GPIO11
+  #    mode: INPUT_PULLUP
+  #    inverted: true
+  #  filters:
+  #    - delayed_on_off: 100ms # Debounce input
 
 # Buzzer platform, if desired, through LEDC
 output:
@@ -266,80 +310,90 @@ light:
     name: "RGB LED"
     id: rgb_led
 
-# Relay outputs, driven by the 8 outputs of the TCA9554
+# Switch components. List lowest level first
 switch:
-    - platform: gpio
-      name: "Relay 1"
-      id: relay1
-      pin:
-        pca9554: TCA9554_8relays
-        number: 0 # Channel 0 is relay 1, Channel 7 is relay 8
-        mode:
-          output: true
-        inverted: false
-    - platform: gpio
-      name: "Relay 2"
-      id: relay2
-      pin:
-        pca9554: TCA9554_8relays
-        number: 1 # Channel 0 is relay 1, Channel 7 is relay 8
-        mode:
-          output: true
-        inverted: false
-    - platform: gpio
-      name: "Relay 3"
-      id: relay3
-      pin:
-        pca9554: TCA9554_8relays
-        number: 2 # Channel 0 is relay 1, Channel 7 is relay 8
-        mode:
-          output: true
-        inverted: false
-    - platform: gpio
-      name: "Relay 4"
-      id: relay4
-      pin:
-        pca9554: TCA9554_8relays
-        number: 3 # Channel 0 is relay 1, Channel 7 is relay 8
-        mode:
-          output: true
-        inverted: false
-    - platform: gpio
-      name: "Relay 5"
-      id: relay5
-      pin:
-        pca9554: TCA9554_8relays
-        number: 4 # Channel 0 is relay 1, Channel 7 is relay 8
-        mode:
-          output: true
-        inverted: false
-    - platform: gpio
-      name: "Relay 6"
-      id: relay6
-      pin:
-        pca9554: TCA9554_8relays
-        number: 5 # Channel 0 is relay 1, Channel 7 is relay 8
-        mode:
-          output: true
-        inverted: false
-    - platform: gpio
-      name: "Relay 7"
-      id: relay7
-      pin:
-        pca9554: TCA9554_8relays
-        number: 6 # Channel 0 is relay 1, Channel 7 is relay 8
-        mode:
-          output: true
-        inverted: false
-    - platform: gpio
-      name: "Relay 8"
-      id: relay8
-      pin:
-        pca9554: TCA9554_8relays
-        number: 7 # Channel 0 is relay 1, Channel 7 is relay 8
-        mode:
-          output: true
-        inverted: false
+# Relay outputs, driven by the 8 outputs of the TCA9554
+  # Wire channel 1 to the NC relay, so that it can break circuit if activated
+  - platform: gpio
+    name: "Break Pressure OK for 10 sec (CH1 NC)"
+    id: pressNC
+    icon: "mdi:electric-switch-closed"
+    pin:
+      pca9554: TCA9554_8relays
+      number: 0 # Channel 0 is relay 1, Channel 7 is relay 8
+      mode:
+        output: true
+      inverted: false
+    # Turn it back off after 10 sec
+    on_turn_on:
+      - rtttl.play: 'scaleDown:d=2,o=5,b=100:b,a#,g#,f#,e,d#,c#,b4'
+      - delay: 10000ms
+      - switch.turn_off: pressNC
+      - rtttl.play: 'scaleUp:d=2,o=5,b=100:c,c#,d#,e,f#,g#,a#,b'
+  # 
+#  - platform: gpio
+#    name: "Pump run contactor (CH2 NC)"
+#    id: runNC
+#    pin:
+#      pca9554: TCA9554_8relays
+#      number: 1 # Channel 0 is relay 1, Channel 7 is relay 8
+#      mode:
+#        output: true
+#      inverted: false
+#    - platform: gpio
+#      name: "Relay 3"
+#      id: relay3
+#      pin:
+#        pca9554: TCA9554_8relays
+#        number: 2 # Channel 0 is relay 1, Channel 7 is relay 8
+#        mode:
+#          output: true
+#        inverted: false
+#    - platform: gpio
+#      name: "Relay 4"
+#      id: relay4
+#      pin:
+#        pca9554: TCA9554_8relays
+#        number: 3 # Channel 0 is relay 1, Channel 7 is relay 8
+#        mode:
+#          output: true
+#        inverted: false
+#    - platform: gpio
+#      name: "Relay 5"
+#      id: relay5
+#      pin:
+#        pca9554: TCA9554_8relays
+#        number: 4 # Channel 0 is relay 1, Channel 7 is relay 8
+#        mode:
+#          output: true
+#        inverted: false
+#    - platform: gpio
+#      name: "Relay 6"
+#      id: relay6
+#      pin:
+#        pca9554: TCA9554_8relays
+#        number: 5 # Channel 0 is relay 1, Channel 7 is relay 8
+#        mode:
+#          output: true
+#        inverted: false
+#    - platform: gpio
+#      name: "Relay 7"
+#      id: relay7
+#      pin:
+#        pca9554: TCA9554_8relays
+#        number: 6 # Channel 0 is relay 1, Channel 7 is relay 8
+#        mode:
+#          output: true
+#        inverted: false
+#    - platform: gpio
+#      name: "Relay 8"
+#      id: relay8
+#      pin:
+#        pca9554: TCA9554_8relays
+#        number: 7 # Channel 0 is relay 1, Channel 7 is relay 8
+#        mode:
+#          output: true
+#        inverted: false
 
 # Virtual buttons
 button:
@@ -355,5 +409,51 @@ button:
     name: "Safe Mode"
     internal: false
     entity_category: config
+
+
+# # ADC input on GPIO1
+  # - platform: adc
+  #   pin: GPIO1
+  #   # ADC notes here
+  #   attenuation: 0dB
+  #   name: "GPIO1 ADC"
+  #   filters:
+  #     - sliding_window_moving_average:
+  #         window_size: 6
+  #         send_every: 6
+  #         send_first_at: 6
+  #   update_interval: 5s # will report every update_interval * send_every seconds.
+  #   accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+
+  # # ADC input on GPIO2
+  # - platform: adc
+  #   pin: GPIO2
+  #   # ADC notes here
+  #   attenuation: 0dB
+  #   name: "GPIO2 ADC"
+  #   filters:
+  #     - sliding_window_moving_average:
+  #         window_size: 6
+  #         send_every: 6
+  #         send_first_at: 6
+  #   update_interval: 5s # will report every update_interval * send_every seconds.
+  #   accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+
+  # # ADC input on GPIO3
+  # - platform: adc
+  #   pin: GPIO3
+  #   # ADC notes here
+  #   attenuation: 0dB
+  #   name: "GPIO3 ADC"
+  #   filters:
+  #     - sliding_window_moving_average:
+  #         window_size: 6
+  #         send_every: 6
+  #         send_first_at: 6
+  #   update_interval: 5s # will report every update_interval * send_every seconds.
+  #   accuracy_decimals: 3 # want milliVolts, that is 3 places. ESP32 surely isn't this good tho.
+
+
+# Andrews S: turn off pump by breaking the pressure up for 5 seconds
 
 # TODO any automations and custom names below:
