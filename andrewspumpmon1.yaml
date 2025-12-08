@@ -214,42 +214,42 @@ binary_sensor:
       - button.press: restart_button
 
 # Digital Inputs are binary sensors through GPIO
-  - platform: gpio
-    id: pumpRunning
-    name: "Pump Running (DI1)"
-    pin:
-      number: GPIO4
-      mode: INPUT_PULLUP
-      inverted: true
-    filters:
-      - delayed_on_off: 900ms # Debounce input
-  - platform: gpio
-    id: pressureUp
-    name: "Pressure Up (DI2)"
-    pin:
-      number: GPIO5
-      mode: INPUT_PULLUP
-      inverted: false # Pressure is up when voltage is not present here, switch is closed
-    filters:
-      - delayed_on_off: 900ms # Debounce input
-  - platform: gpio
-    id: inAuto
-    name: "Hand/Auto In Auto (DI3)"
-    pin:
-      number: GPIO6
-      mode: INPUT_PULLUP
-      inverted: true # TODO find polarity
-    filters:
-      - delayed_on_off: 500ms # Debounce input
-  - platform: gpio
-    id: faultLight
-    name: "Fault or Error"
-    pin:
-      number: GPIO7
-      mode: INPUT_PULLUP
-      inverted: true
-    filters:
-      - delayed_on_off: 500ms # Debounce input
+#  - platform: gpio
+#    id: pumpRunning
+#    name: "Pump Running (DI1)"
+#    pin:
+#      number: GPIO4
+#      mode: INPUT_PULLUP
+#      inverted: false # gets pulled up when true
+#    filters:
+#      - delayed_on_off: 900ms # Debounce input
+#  - platform: gpio
+#    id: pressureUp
+#    name: "Pressure Up (DI2)"
+#    pin:
+#      number: GPIO5
+#      mode: INPUT_PULLUP
+#      inverted: false # Pressure is up when voltage is not present here, switch is closed
+#    filters:
+#      - delayed_on_off: 900ms # Debounce input
+#  - platform: gpio
+#    id: inAuto
+#    name: "Hand/Auto In Auto (DI3)"
+#    pin:
+#      number: GPIO6
+#      mode: INPUT_PULLUP
+#      inverted: true # TODO find polarity
+#    filters:
+#      - delayed_on_off: 500ms # Debounce input
+#  - platform: gpio
+#    id: faultLight
+#    name: "Fault or Error"
+#    pin:
+#      number: GPIO7
+#      mode: INPUT_PULLUP
+#      inverted: true
+#    filters:
+#      - delayed_on_off: 500ms # Debounce input
   #- platform: gpio
   #  id: di5
   #  name: "DI5"
@@ -277,15 +277,84 @@ binary_sensor:
   #    inverted: true
   #  filters:
   #    - delayed_on_off: 100ms # Debounce input
-  #- platform: gpio
-  #  id: di8
-  #  name: "DI8"
-  #  pin:
-  #    number: GPIO11
-  #    mode: INPUT_PULLUP
-  #    inverted: true
-  #  filters:
-  #    - delayed_on_off: 100ms # Debounce input
+#  - platform: gpio
+#    id: di8
+#    name: "120V ON DI8"
+#    pin:
+#      number: GPIO11
+#      mode: INPUT_PULLUP
+#      inverted: true
+#    filters:
+#      - delayed_on_off: 100ms # Debounce input
+
+
+# Use straight GPIOs for 4 inputs, not the digital input pins
+
+  - platform: gpio
+    id: andrewsSPumpOn
+    name: "AndrewsS Pump Running (SO1)"
+    pin:
+      number: GPIO3 # GPIO3 is white wire to SO1 input
+      mode: INPUT_PULLDOWN
+      inverted: false # gets driven high when 120V is present. Wire 120V across pump contactor coil
+    filters:
+      - delayed_on_off: 900ms # Debounce input
+  - platform: gpio
+    id: andrewsSPressureUp
+    name: "AndrewsS Pressure Up (SO2)"
+    pin:
+      number: GPIO2 # GPIO2 is dark blue wire from SO2 input.
+      mode: INPUT_PULLDOWN
+      inverted: false # Driven high by 120V input present. Wire across something that has 120V when pressure is ok
+    filters:
+      - delayed_on_off: 900ms # Debounce input
+  - platform: gpio
+    id: andrewsSinAuto
+    name: "AndrewsS Hand/Auto In Auto (SO3)"
+    pin:
+      number: GPIO21 # Light blue from SO3 to GPIO21
+      mode: INPUT_PULLDOWN
+      inverted: false # Driven high by 120V input present. Wire across something that has 120V when in auto
+    filters:
+      - delayed_on_off: 900ms # Debounce input
+  - platform: gpio
+    id: andrewsSFaultLight
+    name: "AndrewsS Fault or Error Light (SO4)"
+    pin:
+      number: GPIO1 # Green goes from SO4 to GPIO1
+      mode: INPUT_PULLDOWN
+      inverted: false # Driven high by 120V across FAULT light
+    filters:
+      - delayed_on_off: 900ms # Debounce input
+
+  # Bremer inputs: up to 3
+  - platform: gpio
+    id: bremerPumpOn
+    name: "Bremer Pump Running (SO5)"
+    pin:
+      number: GPIO45 # GPIO45 to SO5 input
+      mode: INPUT_PULLDOWN
+      inverted: false # Driven high by 120V across SO5.
+    filters:
+      - delayed_on_off: 900ms # Debounce input
+  - platform: gpio
+    id: bremerPressureUp
+    name: "Bremer Pressure Up/Pivot OK (SO6)"
+    pin:
+      number: GPIO47 # GPIO47 to SO6 input
+      mode: INPUT_PULLDOWN
+      inverted: false # Driven high by 120V across SO6.
+    filters:
+      - delayed_on_off: 900ms # Debounce input
+  - platform: gpio
+    id: bremerinAuto
+    name: "Bremer Hand/Auto in Auto (SO7)"
+    pin:
+      number: GPIO48 # GPIO48 to SO7 input
+      mode: INPUT_PULLDOWN
+      inverted: false # Driven high by 120V across SO7.
+    filters:
+      - delayed_on_off: 900ms # Debounce input
 
 # Buzzer platform, if desired, through LEDC
 output:
